@@ -25,6 +25,14 @@ minimal frameworks used in weekly projects to learn about:
 
 ## Currying Framework
 
+---
+
+## V-DOM Framework
+
+---
+
+## Self-Logging Hyperapp
+
 
 ___
 ___
