@@ -12,11 +12,10 @@ const actions = {
  
 };
 
-const app = framework(state, actions);
+const app = convolution(state, actions);
 
-const st1 = app.read_all();
-const st2 = app.advance({next: 1});
-const st3 = app.read_all();
+
+const st2 = app.advance(1);
 
 // console.log(st1);
 // console.log(st2);
