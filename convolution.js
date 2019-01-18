@@ -1,73 +1,84 @@
-// call with 'new' to build a self-logging app
-// call without 'new' to get a basic currying app
+// can't modify top-level state properties after app is initiated
 // can directly modify state by passing in functions that return partial states
-// can't modify top-level object once app has initiated
-// * can extend/modify log access by overwriting convolution.prototype.access_log
+// call without 'new' to get a basic currying app
+// call with 'new' to build a self-logging app
+  // the log is an array accessible only by 'this.log' in convolution.prototype.access_log 
+  // can extend/modify log access by overwriting convolution.prototype.access_log
+  // modifications apply directly to all self-logging instances in current runtime
+  // 'this' is really just an object 
+    // you can use it to keep any notes about the instance by passing payloads through instance()
+    // and handling them in access_log
+    // the only thing you can't mess with is the log. it will always be there, and it will be an array
+
+
 
 function convolution (state, actions) {
 
   const constructor = this instanceof convolution;
 
   // build base function for app instance
-  function instance (arg, log_info) {                     
-
+  let instance = function (arg, log_info) {                 // users can clear the log
+                                                            //  but not remove it, or change it's type
+                                                            if (constructor) {
+                                                             if (!(this.log instanceof Array)) {
+                                                              this.log = [];
+                                                             }; };
     // check if arg is a log call object
     if (arg instanceof Function) {                        
-      const result = arg(state);                          const new_entry = {};
-                                                          if (constructor) {
-                                                            try { // allows manual state updates
-                                                              if (log_info.args === undefined && 
-                                                                log_info.name === undefined) {
-                                                                // assume people don't use both in a note
+      const result = arg(state);                            const new_entry = {};
+                                                            if (constructor) {
+                                                              try { // allows manual state updates
+                                                                if (log_info.args === undefined && 
+                                                                  log_info.name === undefined) {
+                                                                  // assume people don't use both in a note
+                                                                  new_entry.action = arg;
+                                                                  new_entry.notes = log_info;
+                                                                } else {
+                                                                  new_entry.action = log_info.name; 
+                                                                  new_entry.args = log_info.args;
+                                                                }; 
+                                                              } catch {
                                                                 new_entry.action = arg;
                                                                 new_entry.notes = log_info;
-                                                              } else {
-                                                                new_entry.action = log_info.name; 
-                                                                new_entry.args = log_info.args;
-                                                              }; 
-                                                            } catch {
-                                                              new_entry.action = arg;
-                                                              new_entry.notes = log_info;
-                                                            }; /* comment this beast later */ };
+                                                              }; /* comment this beast later */ };
                      
                                 
-      if (result instanceof Error) {                      if (constructor) {
-                                                            new_entry.state = copy(state);
-                                                            new_entry.error = result;  
-                                                            this.log.push(new_entry);  };
+      if (result instanceof Error) {                        if (constructor) {
+                                                              new_entry.state = copy(state);
+                                                              new_entry.error = result;  
+                                                              this.log.push(new_entry);  };
         throw result;                                      
 
       } else {                                             
         const old_state = copy(state);                     
         const new_state = update_state(result, old_state); 
         state = copy(new_state);                          
-                                                          if (constructor) {
-                                                            new_entry.result = result;
-                                                            new_entry.old_state = copy(old_state);
-                                                            new_entry.new_state = copy(new_state); 
-                                                            this.log.push(new_entry); }
+                                                            if (constructor) {
+                                                              new_entry.result = result;
+                                                              new_entry.old_state = copy(old_state);
+                                                              new_entry.new_state = copy(new_state); 
+                                                              this.log.push(new_entry); }
         return result;
       };
 
-    } else if (isObject(arg)) {
-                                                          if (constructor) {
-                                                            return this.access_log(arg);
-                                                          } else {
-                                                            return 'no log, sorry';
-                                                          };
+    } else if (isObject(arg)) {                             if (constructor) {
+                                                              return this.access_log(arg);
+                                                            } else {
+                                                              return 'no log, sorry';
+                                                            };
 
-    } else if (arg === 'state') {                         if (constructor) {
-                                                            const new_entry = copy(state);
-                                                            new_entry.notes = log_info;
-                                                            this.log.push(new_entry);  };
+    } else if (arg === 'state') {                           if (constructor) {
+                                                              const new_entry = copy(state);
+                                                              new_entry.notes = log_info;
+                                                              this.log.push(new_entry);  };
       return copy(state);
 
     } else {                                               
-      const err = new Error('invalid argument');          if (constructor) {
-                                                            const err_log = {arg};
-                                                            err_log.err = err;
-                                                            err_log.notes = log_info;
-                                                            this.log.push(err_log);  };
+      const err = new Error('invalid argument');            if (constructor) {
+                                                              const err_log = {arg};
+                                                              err_log.err = err;
+                                                              err_log.notes = log_info;
+                                                              this.log.push(err_log);  };
                                                            
       throw err;
     };
